@@ -1,4 +1,4 @@
-package com.jimzrt.RezeptMeister;
+package com.jimzrt.RezeptMeister.model;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.persistence.CascadeType;
+import javax.persistence.Column;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -45,7 +46,9 @@ public class Recipe {
 
 	private @NonNull String title;
 	
-	@Lob
+	private @NonNull String seoTitle;
+	
+	@Column(columnDefinition="TEXT")
 	private String description = "";
 	
 	private String pictureUrl = "";
@@ -60,7 +63,7 @@ public class Recipe {
 	private @NonNull Nutrition nutrition;
 
 	@OneToMany(mappedBy = "recipe", cascade = CascadeType.ALL)
-	private @NonNull List<AmountGroup> amountGroups = new ArrayList<AmountGroup>();
+	private @NonNull List<IngredientGroup> ingredientGroups = new ArrayList<IngredientGroup>();
 	
 
 	@ElementCollection(fetch = FetchType.LAZY)
@@ -79,16 +82,21 @@ public class Recipe {
 			@JoinColumn(name = "tag_id") })
 	private Set<Tag> tags;
 	
-	public void addAmountGroup(AmountGroup amountGroup) {
-		this.amountGroups.add(amountGroup);
-		amountGroup.setRecipe(this);
-		this.ingredients.addAll(amountGroup.getAmounts().keySet());
+	public void addAmountGroup(IngredientGroup ingredientGroup) {
+		this.ingredientGroups.add(ingredientGroup);
+		ingredientGroup.setRecipe(this);
+		this.ingredients.addAll(ingredientGroup.getAmounts().keySet());
 	}
 	
-//	public void setAmountGroups(@NonNull List<AmountGroup> amountGroups) {
-//		this.amountGroups = amountGroups;
-//		amountGroups.stream().forEach(ag -> ag.setRecipe(this));
-//		this.ingredients = amountGroups.stream().flatMap(ag -> ag.getAmounts().keySet().stream()).collect(Collectors.toSet());
+	public void setNutrition(@NonNull Nutrition nutrition) {
+		nutrition.setRecipe(this);
+		this.nutrition = nutrition;
+	}
+	
+//	public void setAmountGroups(@NonNull List<IngredientGroup> ingredientGroups) {
+//		this.amountGroups = ingredientGroups;
+//		ingredientGroups.stream().forEach(ag -> ag.setRecipe(this));
+//		this.ingredients = ingredientGroups.stream().flatMap(ag -> ag.getAmounts().keySet().stream()).collect(Collectors.toSet());
 //	}
 
 }

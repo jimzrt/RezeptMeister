@@ -1,4 +1,4 @@
-package com.jimzrt.RezeptMeister;
+package com.jimzrt.RezeptMeister.web;
 
 import java.util.List;
 
@@ -6,6 +6,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import com.jimzrt.RezeptMeister.model.Ingredient;
+import com.jimzrt.RezeptMeister.model.Recipe;
+import com.jimzrt.RezeptMeister.repositories.IngredientRepository;
+import com.jimzrt.RezeptMeister.repositories.RecipeRepository;
 
 @RestController
 public class HelloController {

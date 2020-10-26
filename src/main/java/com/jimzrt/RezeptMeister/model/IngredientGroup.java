@@ -1,4 +1,4 @@
-package com.jimzrt.RezeptMeister;
+package com.jimzrt.RezeptMeister.model;
 
 import java.io.Serializable;
 import java.util.List;
@@ -36,7 +36,7 @@ import lombok.ToString;
 @Getter
 @Setter
 @Data
-public class AmountGroup implements Serializable {
+public class IngredientGroup implements Serializable {
 
 	/**
 	 * 

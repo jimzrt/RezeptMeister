@@ -1,4 +1,4 @@
-package com.jimzrt.RezeptMeister;
+package com.jimzrt.RezeptMeister.model;
 
 import java.io.Serializable;
 

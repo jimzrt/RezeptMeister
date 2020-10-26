@@ -17,6 +17,7 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -27,7 +28,19 @@ import org.springframework.util.StopWatch;
 import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jimzrt.RezeptMeister.EdekaResponse.EdekaRecipe;
+import com.jimzrt.RezeptMeister.model.Amount;
+import com.jimzrt.RezeptMeister.model.IngredientGroup;
+import com.jimzrt.RezeptMeister.model.Nutrition;
+import com.jimzrt.RezeptMeister.model.Difficulty;
+import com.jimzrt.RezeptMeister.model.Ingredient;
+import com.jimzrt.RezeptMeister.model.Recipe;
+import com.jimzrt.RezeptMeister.model.Unit;
+import com.jimzrt.RezeptMeister.model.external.EdekaResponse;
+import com.jimzrt.RezeptMeister.model.external.EdekaResponse.EdekaRecipe;
+import com.jimzrt.RezeptMeister.repositories.IngredientRepository;
+import com.jimzrt.RezeptMeister.repositories.NutritionRepository;
+import com.jimzrt.RezeptMeister.repositories.RecipeRepository;
+import com.jimzrt.RezeptMeister.repositories.UnitRepository;
 
 import lombok.NonNull;
 
@@ -45,13 +58,30 @@ public class RezeptMeisterApplication {
 		return builder.build();
 	}
 
+	@Autowired
+	RecipeRepository recipeRepository;
+	
+	@Autowired
+	IngredientRepository ingredientRepository;
+	
+	@Autowired
+	UnitRepository unitRepository;
+	
+//	@Autowired
+//	NutritionRepository nutritionRepository;
+	
 	@Bean
 	@Order(1)
-	public CommandLineRunner run(RestTemplate restTemplate,RecipeRepository recipeRepository, IngredientRepository ingredientRepository, UnitRepository unitRepository) throws Exception {
+	public CommandLineRunner run(RestTemplate restTemplate) throws Exception {
 		return args -> {
-
-			int recipeCount = 0;
-			int pageCount = 1;
+			
+			
+			if(recipeRepository.count() > 0) {
+				log.info("Got more than 1 recipe, skip database init");
+				return;
+			}
+			
+			int pageCount = 80;
 			while (true) {
 
 				log.info("Getting page " + pageCount);
@@ -64,20 +94,28 @@ public class RezeptMeisterApplication {
 				}
 				StopWatch watch = new StopWatch();
 		        watch.start();
-//		        Set<String> collect = edekaResponse.getRecipes().stream()
-//						.flatMap(r -> r.getIngredientGroups().stream()
-//								.flatMap(g -> g.getIngredientGroupIngredients().stream().map(gi -> gi.getIngredient())))
-//						.collect(Collectors.toSet());
 		        
 		        for(var edekaRecipe : edekaResponse.getRecipes()){
 		        	Recipe recipe = new Recipe();
 		        	recipe.setTitle(edekaRecipe.getTitle());
+		        	recipe.setSeoTitle(edekaRecipe.getSeoTitle());
 		        	recipe.setDifficulty(Difficulty.valueOf(edekaRecipe.getDifficulty()));
 		        	recipe.setDescription(edekaRecipe.getDescriptions().getMetaDesc());
 		        	recipe.setDefaultServingSize(edekaRecipe.getServings());
+		        	Nutrition nutrition = new Nutrition();
+		        	nutrition.setCarohydrates(edekaRecipe.getNutrition().getCarohydrates());
+		        	nutrition.setCholesterol(edekaRecipe.getNutrition().getCholesterol());
+		        	nutrition.setFat(edekaRecipe.getNutrition().getFat());
+		        	nutrition.setKcal(edekaRecipe.getNutrition().getKcal());
+		        	nutrition.setKj(edekaRecipe.getNutrition().getKj());
+		        	nutrition.setProtein(edekaRecipe.getNutrition().getProtein());
+		        	nutrition.setRoughage(edekaRecipe.getNutrition().getRoughage());
+		  
+		        	recipe.setNutrition(nutrition);
+		        	
 		        	for(var edekaIngredientGroup : edekaRecipe.getIngredientGroups()) {
-		        		AmountGroup amountGroup = new AmountGroup();
-		        		amountGroup.setName(edekaIngredientGroup.getName() == null ? "" : edekaIngredientGroup.getName());
+		        		IngredientGroup ingredientGroup = new IngredientGroup();
+		        		ingredientGroup.setName(edekaIngredientGroup.getName() == null ? "" : edekaIngredientGroup.getName());
 		        		Map<Ingredient, Amount> amountMap = new HashMap<Ingredient, Amount>();
 		        		for(var edekaGroupIngredient : edekaIngredientGroup.getIngredientGroupIngredients()) {
 		        			
@@ -95,24 +133,20 @@ public class RezeptMeisterApplication {
 		        				ingredientRepository.save(ingredient);
 		        			}
 		        			amountMap.put(ingredient, amount);
-		        					//amount.setUnit();
-		        			//amountMap.put(edekaGroupIngredient.getIngredient(), );
 		        			
 		        		}
-		        		amountGroup.setAmounts(amountMap);
-		        		recipe.addAmountGroup(amountGroup);
+		        		ingredientGroup.setAmounts(amountMap);
+		        		recipe.addAmountGroup(ingredientGroup);
 		        	}
 		        	recipeRepository.save(recipe);
 		        }
-		        
-		       // collect.stream().forEach(in->inRepo.save(new Ingredient(in)));
-				
+		        				
 				watch.stop();
 				log.info(String.format("saving took %s ms", watch.getTotalTimeMillis()));
 				pageCount++;
-				recipeCount = edekaResponse.getRecipes().size();
+				int recipeCount = edekaResponse.getRecipes().size();
 				log.info("Got " + recipeCount + " recipes");
-				Thread.sleep(5000L);
+				Thread.sleep(1000L);
 			}
 			
 			
@@ -137,6 +171,7 @@ public class RezeptMeisterApplication {
 //				Thread.sleep(1000L);
 //			}
 			//log.info("" + collect.size());
+			log.info("Init done!");
 		};
 	}
 
@@ -166,7 +201,7 @@ public class RezeptMeisterApplication {
 //			amountMap.put(tomate, new Amount(new Unit("KG"), 100f));
 //			amountMap.put(zwiebel, new Amount(new Unit("G"), 500f));
 //
-//			AmountGroup amountGroup = new AmountGroup("Prep", amountMap);
+//			IngredientGroup amountGroup = new IngredientGroup("Prep", amountMap);
 //
 //			Recipe recp = new Recipe();
 //			recp.setTitle("Kartoffelsalat");

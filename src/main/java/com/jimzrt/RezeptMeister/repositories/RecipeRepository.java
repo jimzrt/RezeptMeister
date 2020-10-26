@@ -1,8 +1,10 @@
-package com.jimzrt.RezeptMeister;
+package com.jimzrt.RezeptMeister.repositories;
 
 import java.util.List;
 
 import org.springframework.data.repository.CrudRepository;
+
+import com.jimzrt.RezeptMeister.model.Recipe;
 
 public interface RecipeRepository  extends CrudRepository<Recipe, Long>{
 
