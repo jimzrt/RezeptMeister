@@ -1,0 +1,7 @@
+package com.jimzrt.RezeptMeister.model.specification;
+
+public enum SearchOperation {
+
+	EQUALITY, NEGATION, GREATER_THAN, LESS_THAN, LIKE_TITLE, STARTS_WITH, IN, CONTAINS, NOT_CONTAINS, CONTAINS_LIKE,
+	NOT_CONTAINS_LIKE, NOT_EQUAL, NOT_LIKE, LIKE_NAME
+}

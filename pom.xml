@@ -27,7 +27,10 @@
 			<version>1.13.1</version>
 		</dependency>
 
-
+		<dependency>
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-hibernate5</artifactId>
+		</dependency>
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -42,12 +45,14 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-data-jpa</artifactId>
 		</dependency>
-		
+
 		<dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <scope>runtime</scope>
-        </dependency>
+			<groupId>org.postgresql</groupId>
+			<artifactId>postgresql</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -72,6 +77,18 @@
 				</exclusion>
 			</exclusions>
 		</dependency>
+
+		<dependency>
+			<groupId>cz.jirutka.unidecode</groupId>
+			<artifactId>unidecode</artifactId>
+			<version>1.0.1</version>
+		</dependency>
+		
+		<dependency>
+	    <groupId>org.hibernate</groupId>
+	    <artifactId>hibernate-search-orm</artifactId>
+	    <version>5.11.7.Final</version>
+	</dependency>
 	</dependencies>
 
 	<build>
@@ -79,6 +96,43 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<outputDirectory>${project.build.directory}/out</outputDirectory>
+					 <finalName>${artifactId}</finalName>
+				</configuration>
+			</plugin>
+			<plugin>
+				<artifactId>maven-resources-plugin</artifactId>
+				<executions>
+					<execution>
+						<id>copy-resources</id>
+						<!-- here the phase you need -->
+						<phase>package</phase>
+						<goals>
+							<goal>copy-resources</goal>
+						</goals>
+						<configuration>
+							<outputDirectory>${project.build.directory}/out</outputDirectory>
+							<resources>
+								<resource>
+									<targetPath>${project.build.directory}/out/import</targetPath>
+									<directory>import</directory>
+								</resource>
+								<resource>
+									<targetPath>${project.build.directory}/out/static</targetPath>
+									<directory>static</directory>
+								</resource>
+								<resource>
+									<targetPath>${project.build.directory}/out</targetPath>
+									<directory>src/main/resources</directory>
+       								 <includes>
+         							 <include>application.properties</include>
+         							 </includes>
+								</resource>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

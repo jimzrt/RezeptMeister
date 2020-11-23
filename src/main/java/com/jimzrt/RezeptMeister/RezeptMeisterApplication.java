@@ -1,48 +1,44 @@
 package com.jimzrt.RezeptMeister;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.time.Duration;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
+import java.util.zip.GZIPInputStream;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
+
+import org.hibernate.search.jpa.FullTextEntityManager;
+import org.hibernate.search.jpa.Search;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.ResourceLoader;
 import org.springframework.util.StopWatch;
-import org.springframework.web.client.RestTemplate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jimzrt.RezeptMeister.model.Amount;
-import com.jimzrt.RezeptMeister.model.IngredientGroup;
-import com.jimzrt.RezeptMeister.model.Nutrition;
 import com.jimzrt.RezeptMeister.model.Difficulty;
 import com.jimzrt.RezeptMeister.model.Ingredient;
+import com.jimzrt.RezeptMeister.model.IngredientGroup;
+import com.jimzrt.RezeptMeister.model.Nutrition;
 import com.jimzrt.RezeptMeister.model.Recipe;
+import com.jimzrt.RezeptMeister.model.Tag;
 import com.jimzrt.RezeptMeister.model.Unit;
 import com.jimzrt.RezeptMeister.model.external.EdekaResponse;
-import com.jimzrt.RezeptMeister.model.external.EdekaResponse.EdekaRecipe;
 import com.jimzrt.RezeptMeister.repositories.IngredientRepository;
-import com.jimzrt.RezeptMeister.repositories.NutritionRepository;
 import com.jimzrt.RezeptMeister.repositories.RecipeRepository;
+import com.jimzrt.RezeptMeister.repositories.TagRepository;
 import com.jimzrt.RezeptMeister.repositories.UnitRepository;
-
-import lombok.NonNull;
 
 @SpringBootApplication
 public class RezeptMeisterApplication {
@@ -53,103 +49,210 @@ public class RezeptMeisterApplication {
 		SpringApplication.run(RezeptMeisterApplication.class, args);
 	}
 
-	@Bean
-	public RestTemplate restTemplate(RestTemplateBuilder builder) {
-		return builder.build();
+	@Autowired
+	RecipeRepository recipeRepository;
+
+	@Autowired
+	IngredientRepository ingredientRepository;
+
+	@Autowired
+	UnitRepository unitRepository;
+
+	@Autowired
+	TagRepository tagRepository;
+
+//	@Autowired
+//	NutritionRepository nutritionRepository;
+
+	// decompress a Gzip file into a byte arrays
+	public static byte[] decompressGzipToBytes(InputStream source) throws IOException {
+
+		ByteArrayOutputStream output = new ByteArrayOutputStream();
+
+		try (GZIPInputStream gis = new GZIPInputStream(source)) {
+
+			// copy GZIPInputStream to ByteArrayOutputStream
+			byte[] buffer = new byte[1024];
+			int len;
+			while ((len = gis.read(buffer)) > 0) {
+				output.write(buffer, 0, len);
+			}
+
+		}
+
+		return output.toByteArray();
+
 	}
 
 	@Autowired
-	RecipeRepository recipeRepository;
-	
-	@Autowired
-	IngredientRepository ingredientRepository;
-	
-	@Autowired
-	UnitRepository unitRepository;
+	private ResourceLoader resourceLoader;
 	
 //	@Autowired
-//	NutritionRepository nutritionRepository;
-	
+//	private EntityManager entityManager;
+//	
+//	@Bean
+//	@Order(2)
+//	public CommandLineRunner buildLuceneIndex() {
+//		return args -> {
+//			FullTextEntityManager fullTextEntityManager = Search.getFullTextEntityManager(entityManager);
+//			try {
+//				fullTextEntityManager.createIndexer().startAndWait();
+//			} catch (InterruptedException e) {
+//				System.out.println("Error occured trying to build Hibernate Search indexes "
+//						+ e.toString());
+//			}
+//		};
+//	}
+
 	@Bean
 	@Order(1)
-	public CommandLineRunner run(RestTemplate restTemplate) throws Exception {
+	public CommandLineRunner run() throws Exception {
 		return args -> {
-			
-			
-			if(recipeRepository.count() > 0) {
-				log.info("Got more than 1 recipe, skip database init");
+
+			if (recipeRepository.count() > 0) {
+				log.info(String.format("Got %d recipes, skip database init", recipeRepository.count()));
+				log.info("Recreate database for new import!");
 				return;
 			}
-			
-			int pageCount = 80;
-			while (true) {
 
-				log.info("Getting page " + pageCount);
-				EdekaResponse edekaResponse = restTemplate.getForObject(
-						"https://www.edeka.de/rezepte/rezept/suche?query=&page=" + pageCount + " &size=50",
-						EdekaResponse.class);
+//			Resource resource = new ClassPathResource("/import/merged_edeka.json.gz");
+//		    File file = resource.getFile();
+//		    
+			// File file = new
+			// File(getClass().getResource("import/merged_edeka.json.gz").getFile());
+			// File file = new
+			// File(String.valueOf(this.getClass().getResourceAsStream("/import/merged_edeka.json.gz")));
+			// InputStream is =
+			// Thread.currentThread().getContextClassLoader().getResourceAsStream("/import/merged_edeka.json.gz");
 
-				if (edekaResponse.getRecipes() == null) {
-					break;
-				}
-				StopWatch watch = new StopWatch();
-		        watch.start();
-		        
-		        for(var edekaRecipe : edekaResponse.getRecipes()){
-		        	Recipe recipe = new Recipe();
-		        	recipe.setTitle(edekaRecipe.getTitle());
-		        	recipe.setSeoTitle(edekaRecipe.getSeoTitle());
-		        	recipe.setDifficulty(Difficulty.valueOf(edekaRecipe.getDifficulty()));
-		        	recipe.setDescription(edekaRecipe.getDescriptions().getMetaDesc());
-		        	recipe.setDefaultServingSize(edekaRecipe.getServings());
-		        	Nutrition nutrition = new Nutrition();
-		        	nutrition.setCarohydrates(edekaRecipe.getNutrition().getCarohydrates());
-		        	nutrition.setCholesterol(edekaRecipe.getNutrition().getCholesterol());
-		        	nutrition.setFat(edekaRecipe.getNutrition().getFat());
-		        	nutrition.setKcal(edekaRecipe.getNutrition().getKcal());
-		        	nutrition.setKj(edekaRecipe.getNutrition().getKj());
-		        	nutrition.setProtein(edekaRecipe.getNutrition().getProtein());
-		        	nutrition.setRoughage(edekaRecipe.getNutrition().getRoughage());
-		  
-		        	recipe.setNutrition(nutrition);
-		        	
-		        	for(var edekaIngredientGroup : edekaRecipe.getIngredientGroups()) {
-		        		IngredientGroup ingredientGroup = new IngredientGroup();
-		        		ingredientGroup.setName(edekaIngredientGroup.getName() == null ? "" : edekaIngredientGroup.getName());
-		        		Map<Ingredient, Amount> amountMap = new HashMap<Ingredient, Amount>();
-		        		for(var edekaGroupIngredient : edekaIngredientGroup.getIngredientGroupIngredients()) {
-		        			
-		        			Amount amount = new Amount();
-		        			amount.setQuantity(edekaGroupIngredient.getQuantity());
-		        			Unit unit = unitRepository.findByName(edekaGroupIngredient.getUnit() == null ? "" : edekaGroupIngredient.getUnit());
-		        			if(unit == null) {
-		        				unit = new Unit(edekaGroupIngredient.getUnit() == null ? "" : edekaGroupIngredient.getUnit());
-		        				unitRepository.save(unit);
-		        			}
-		        			amount.setUnit(unit);
-		        			Ingredient ingredient = ingredientRepository.findByName(edekaGroupIngredient.getIngredient());
-		        			if(ingredient == null) {
-		        				ingredient = new Ingredient(edekaGroupIngredient.getIngredient());
-		        				ingredientRepository.save(ingredient);
-		        			}
-		        			amountMap.put(ingredient, amount);
-		        			
-		        		}
-		        		ingredientGroup.setAmounts(amountMap);
-		        		recipe.addAmountGroup(ingredientGroup);
-		        	}
-		        	recipeRepository.save(recipe);
-		        }
-		        				
-				watch.stop();
-				log.info(String.format("saving took %s ms", watch.getTotalTimeMillis()));
-				pageCount++;
-				int recipeCount = edekaResponse.getRecipes().size();
-				log.info("Got " + recipeCount + " recipes");
-				Thread.sleep(1000L);
+			Resource resource = resourceLoader.getResource("file:import/merged_edeka.json.gz");
+			InputStream is = null;
+			try {
+				is = resource.getInputStream();
+
+			} catch (IOException exception) {
+				log.error("import/merged_edeka.json does not exist! Check Readme in import-folder");
+				return;
 			}
-			
-			
+
+			if (is == null) {
+				log.error("import/merged_edeka.json does not exist! Check Readme in import-folder");
+				return;
+			}
+
+			log.info("Starting import");
+			ObjectMapper objectMapper = new ObjectMapper();
+
+			EdekaResponse edekaResponse = objectMapper.readValue(decompressGzipToBytes(is), EdekaResponse.class);
+			StopWatch watch = new StopWatch();
+			watch.start();
+
+			for (var edekaRecipe : edekaResponse.getRecipes()) {
+				Recipe recipe = recipeRepository.findBySeoTitle(edekaRecipe.getSeoTitle());
+				if (recipe != null) {
+					log.info(String.format("ignore duplicate recipe: %s", recipe.getTitle()));
+					continue;
+				}
+				recipe = new Recipe();
+				recipe.setTitle(edekaRecipe.getTitle());
+				recipe.setSeoTitle(edekaRecipe.getSeoTitle());
+
+				resource = resourceLoader.getResource(
+						String.format("file:static/images/recipe/%s_big.jpg", edekaRecipe.getSeoTitle()));
+				InputStream pictureInputstream = null;
+				try {
+					pictureInputstream = resource.getInputStream();
+				} catch (IOException exception) {
+					log.info(String.format("ignore recipe without picture: %s", recipe.getTitle()));
+					continue;
+				}
+				// InputStream pictureInputstream =
+				// getClass().getClassLoader().getResourceAsStream(String.format("classpath:static/images/recipe/%s_big.jpg",
+				// edekaRecipe.getSeoTitle()));
+				// File pictureFile = new
+				// File(String.format("src/main/resources/static/images/recipe/%s_big.jpg",
+				// edekaRecipe.getSeoTitle()));
+				if (pictureInputstream == null) {
+					log.info(String.format("ignore recipe without picture: %s", recipe.getTitle()));
+					continue;
+				}
+				recipe.setPictureUrl(String.format("images/recipe/%s_big.jpg", edekaRecipe.getSeoTitle()));
+
+				recipe.setDifficulty(Difficulty.valueOf(edekaRecipe.getDifficulty()));
+				recipe.setDescription(edekaRecipe.getDescriptions().getMetaDesc());
+				recipe.setDefaultServingSize(edekaRecipe.getServings());
+				Nutrition nutrition = new Nutrition();
+				nutrition.setCarbohydrates(edekaRecipe.getNutritions().getCarbohydrates());
+				nutrition.setCholesterol(edekaRecipe.getNutritions().getCholesterol());
+				nutrition.setFat(edekaRecipe.getNutritions().getFat());
+				nutrition.setKcal(edekaRecipe.getNutritions().getKcal());
+				recipe.setCalories(edekaRecipe.getNutritions().getKcal());
+				nutrition.setKj(edekaRecipe.getNutritions().getKj());
+				nutrition.setProtein(edekaRecipe.getNutritions().getProtein());
+				nutrition.setRoughage(edekaRecipe.getNutritions().getRoughage());
+				recipe.setNutrition(nutrition);
+				recipe.setDirections(edekaRecipe.getDirections());
+				var prepTime = edekaRecipe.getPreparationTime();
+				Duration d = Duration.parse(prepTime);
+				recipe.setPreperationTimeInSeconds(d.toSeconds());
+				var totalTime = edekaRecipe.getTotalTime();
+				d = Duration.parse(totalTime);
+				recipe.setTotalTimeInSeconds(d.toSeconds());
+				var edekaTags = edekaRecipe.getTags();
+				if (edekaTags != null) {
+					for (var edekaTag : edekaTags) {
+						Tag tag = tagRepository.findByName(edekaTag.getName());
+						if (tag == null) {
+							tag = new Tag();
+							tag.setName(edekaTag.getName());
+							tagRepository.save(tag);
+						}
+						recipe.getTags().add(tag);
+					}
+				}
+
+				for (var edekaIngredientGroup : edekaRecipe.getIngredientGroups()) {
+					IngredientGroup ingredientGroup = new IngredientGroup();
+					ingredientGroup
+							.setName(edekaIngredientGroup.getName() == null ? "" : edekaIngredientGroup.getName());
+					Map<Ingredient, Amount> amountMap = new HashMap<Ingredient, Amount>();
+					for (var edekaGroupIngredient : edekaIngredientGroup.getIngredientGroupIngredients()) {
+
+						Amount amount = new Amount();
+						amount.setQuantity(edekaGroupIngredient.getQuantity());
+						Unit unit = unitRepository.findByName(
+								edekaGroupIngredient.getUnit() == null ? "" : edekaGroupIngredient.getUnit());
+						if (unit == null) {
+							unit = new Unit(
+									edekaGroupIngredient.getUnit() == null ? "" : edekaGroupIngredient.getUnit());
+							unitRepository.save(unit);
+						}
+						amount.setUnit(unit);
+						var ingredientName = edekaGroupIngredient.getIngredient().trim();
+						Ingredient ingredient = ingredientRepository.findByName(ingredientName);
+						if (ingredient == null) {
+							var ingredientSlug = Ingredient.makeSlugForName(ingredientName);
+							ingredient = new Ingredient(ingredientName, ingredientSlug);
+							ingredient.setPictureUrl(String.format("/images/ingredient/%s.jpg", ingredientSlug));
+							ingredientRepository.save(ingredient);
+						}
+
+						amountMap.put(ingredient, amount);
+
+					}
+					ingredientGroup.setAmounts(amountMap);
+					recipe.addAmountGroup(ingredientGroup);
+				}
+				recipeRepository.save(recipe);
+			}
+
+			watch.stop();
+			log.info(String.format("saving took %s ms", watch.getTotalTimeMillis()));
+			int recipeCount = edekaResponse.getRecipes().size();
+			log.info("Got " + recipeCount + " recipes");
+			Thread.sleep(1000L);
+			// }
+
 			// get images for ingredients (scrape bing)
 //			for (String ingredient : collect) {
 //				Document doc = Jsoup
@@ -170,7 +273,7 @@ public class RezeptMeisterApplication {
 //				}
 //				Thread.sleep(1000L);
 //			}
-			//log.info("" + collect.size());
+			// log.info("" + collect.size());
 			log.info("Init done!");
 		};
 	}

@@ -4,6 +4,6 @@ import org.springframework.data.repository.CrudRepository;
 
 import com.jimzrt.RezeptMeister.model.Nutrition;
 
-public interface NutritionRepository extends CrudRepository<Nutrition, Long>{
+public interface NutritionRepository extends CrudRepository<Nutrition, Long> {
 
 }

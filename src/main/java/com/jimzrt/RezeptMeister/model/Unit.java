@@ -15,7 +15,11 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@NoArgsConstructor @RequiredArgsConstructor @Getter @Setter @Data
+@NoArgsConstructor
+@RequiredArgsConstructor
+@Getter
+@Setter
+@Data
 public class Unit implements Serializable {
 
 	/**
@@ -25,7 +29,7 @@ public class Unit implements Serializable {
 	@Id
 	@GeneratedValue(strategy = GenerationType.AUTO)
 	private Long id;
-	
+
 	private @NonNull String name;
 
 }
