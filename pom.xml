@@ -83,12 +83,12 @@
 			<artifactId>unidecode</artifactId>
 			<version>1.0.1</version>
 		</dependency>
-		
+
 		<dependency>
-	    <groupId>org.hibernate</groupId>
-	    <artifactId>hibernate-search-orm</artifactId>
-	    <version>5.11.7.Final</version>
-	</dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-search-orm</artifactId>
+			<version>5.11.7.Final</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -97,9 +97,17 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
-					<outputDirectory>${project.build.directory}/out</outputDirectory>
-					 <finalName>${artifactId}</finalName>
+					<mainClass>com.jimzrt.RezeptMeister.RezeptMeisterApplication</mainClass>
 				</configuration>
+
+				<executions>
+					<execution>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+					</execution>
+				</executions>
+
 			</plugin>
 			<plugin>
 				<artifactId>maven-resources-plugin</artifactId>
@@ -122,9 +130,9 @@
 								<resource>
 									<targetPath>${project.build.directory}/out</targetPath>
 									<directory>src/main/resources</directory>
-       								 <includes>
-         							 <include>application.properties</include>
-         							 </includes>
+									<includes>
+										<include>application.properties</include>
+									</includes>
 								</resource>
 							</resources>
 						</configuration>
