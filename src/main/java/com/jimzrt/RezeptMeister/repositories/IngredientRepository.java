@@ -15,9 +15,6 @@ public interface IngredientRepository
 
 	Ingredient findByName(String name);
 
-	// List<Ingredient> findByNameContainingIgnoreCase(String name, Pageable
-	// pageable);
-
 	List<Ingredient> findByNameIgnoreCase(String name);
 
 	List<Ingredient> findByNameIgnoreCase(String name, Pageable pageable);

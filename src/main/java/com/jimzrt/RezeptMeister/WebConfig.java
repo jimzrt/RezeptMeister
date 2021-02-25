@@ -35,6 +35,7 @@ public class WebConfig implements WebMvcConfigurer {
 
 	}
 
+	@Override
 	public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
 		for (HttpMessageConverter<?> converter : converters) {
 			if (converter instanceof org.springframework.http.converter.json.MappingJackson2HttpMessageConverter) {
