@@ -97,6 +97,8 @@
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
+					<outputDirectory>${project.build.directory}/out</outputDirectory>
+					<finalName>${artifactId}</finalName>
 					<mainClass>com.jimzrt.RezeptMeister.RezeptMeisterApplication</mainClass>
 				</configuration>
 
