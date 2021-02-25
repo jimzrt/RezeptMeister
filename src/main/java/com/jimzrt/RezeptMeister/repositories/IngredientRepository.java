@@ -15,19 +15,13 @@ public interface IngredientRepository
 
 	Ingredient findByName(String name);
 
-	List<Ingredient> findByNameIgnoreCase(String name);
-
 	List<Ingredient> findByNameIgnoreCase(String name, Pageable pageable);
-
-	List<Ingredient> findByNameContainingIgnoreCase(String name);
 
 	@Query("select i from Ingredient i where UPPER(i.name) like UPPER(concat('%', :name,'%')) ORDER BY\n" + "  CASE\n"
 			+ "    WHEN UPPER(i.name) LIKE UPPER(concat(:name,'%')) THEN 1\n"
 			+ "    WHEN UPPER(i.name) LIKE UPPER(concat('%', :name)) THEN 3\n" + "    ELSE 2\n"
 			+ "  END, LENGTH(i.name)")
 	List<Ingredient> findByNameContainingIgnoreCase(@Param("name") String name, Pageable pageable);
-
-	List<Ingredient> findByNameStartingWithIgnoreCase(String name);
 
 	List<Ingredient> findByNameStartingWithIgnoreCase(String name, Pageable pageable);
 

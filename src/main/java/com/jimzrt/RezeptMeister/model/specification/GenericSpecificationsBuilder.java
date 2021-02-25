@@ -92,7 +92,7 @@ public class GenericSpecificationsBuilder<T> {
 			if (!containsLike.isEmpty())
 				with("ingredients", SearchOperation.CONTAINS_LIKE, containsLike);
 
-			for (var ingredient : searchFilter.getIngredient()) {
+//			for (var ingredient : searchFilter.getIngredient()) {
 //				if (!ingredient.getExclude() && !ingredient.getWildcard()) {
 //					with("ingredients.id", SearchOperation.EQUAL, Collections.singletonList(ingredient.getId()));
 //				} else
@@ -104,7 +104,7 @@ public class GenericSpecificationsBuilder<T> {
 //				} else {
 //					with("ingredients.name", SearchOperation.NOT_LIKE, Collections.singletonList(ingredient.getId()));
 //				}
-			}
+//			}
 		}
 
 		if (searchFilter.getTag().size() > 0) {
