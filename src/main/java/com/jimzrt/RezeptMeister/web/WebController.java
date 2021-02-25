@@ -89,7 +89,7 @@ public class WebController {
 			return recipeRepository.findByTitleContainingIgnoreCase(name, pageable);
 		}
 
-		return recipeRepository.findByTitleContainingIgnoreCase(name);
+		return recipeRepository.findByTitleContainingIgnoreCase(name, Pageable.unpaged());
 
 	}
 
