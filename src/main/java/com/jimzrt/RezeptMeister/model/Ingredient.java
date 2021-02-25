@@ -56,9 +56,9 @@ public class Ingredient implements Serializable {
 	private @NonNull String name;
 
 	private @NonNull String slug;
-	
-	private transient long recipeCount; 
-	
+
+	private transient long recipeCount;
+
 	@ManyToMany(mappedBy = "ingredients", cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
 	@ToString.Exclude
 	@JsonIgnore

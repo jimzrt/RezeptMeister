@@ -74,10 +74,12 @@ public class GenericSpecification<T> implements Specification<T> {
 					joined = root.join(split[i]);
 				}
 
-				return criteriaBuilder.like(criteriaBuilder.lower(joined.get(split[split.length - 1])), "%" + ((String) arguments.get(0)).toLowerCase() + "%");
+				return criteriaBuilder.like(criteriaBuilder.lower(joined.get(split[split.length - 1])),
+						"%" + ((String) arguments.get(0)).toLowerCase() + "%");
 			}
-			return criteriaBuilder.like(criteriaBuilder.lower(root.get(searchCriteria.getKey())), "%" + ((String) arguments.get(0)).toLowerCase() + "%");
-			
+			return criteriaBuilder.like(criteriaBuilder.lower(root.get(searchCriteria.getKey())),
+					"%" + ((String) arguments.get(0)).toLowerCase() + "%");
+
 		}
 		// TODO
 //		case NOT_LIKE: {
@@ -94,11 +96,11 @@ public class GenericSpecification<T> implements Specification<T> {
 //
 //		}
 		case GREATER_THAN:
-			return criteriaBuilder.greaterThan(root.get(searchCriteria.getKey()), (int)arguments.get(0));
+			return criteriaBuilder.greaterThan(root.get(searchCriteria.getKey()), (int) arguments.get(0));
 		case IN:
 			return root.get(searchCriteria.getKey()).in(arguments);
 		case LESS_THAN:
-			return criteriaBuilder.lessThan(root.get(searchCriteria.getKey()), (int)arguments.get(0));
+			return criteriaBuilder.lessThan(root.get(searchCriteria.getKey()), (int) arguments.get(0));
 		case CONTAINS: {
 
 			// this here should work, but it doesn't. GroupBy confuses pageable count
@@ -141,7 +143,8 @@ public class GenericSpecification<T> implements Specification<T> {
 			}
 			subQuery.where(or_all);
 			subQuery.groupBy(entityTable.get("id"));
-			//subQuery.having(criteriaBuilder.equal(criteriaBuilder.count(joinedTable.get("id")), arguments.size()));
+			// subQuery.having(criteriaBuilder.equal(criteriaBuilder.count(joinedTable.get("id")),
+			// arguments.size()));
 			return criteriaBuilder.in(root).value(subQuery);
 		}
 //		case NOT_CONTAINS_LIKE: {

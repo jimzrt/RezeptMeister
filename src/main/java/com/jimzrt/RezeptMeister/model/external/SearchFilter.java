@@ -17,7 +17,7 @@ public class SearchFilter {
 		private List<String> ingredient_special = new ArrayList<String>();
 		private List<Long> tag = new ArrayList<Long>();
 	}
-	
+
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	@Data
 	public static class Entry {
@@ -33,7 +33,7 @@ public class SearchFilter {
 	private int calories = 0;
 	private int totalTime = 0;
 	private List<Entry> ingredient = new ArrayList<Entry>();
-	//private List<String> ingredient_special = new ArrayList<String>();
+	// private List<String> ingredient_special = new ArrayList<String>();
 
 	private List<Long> recipe = new ArrayList<Long>();
 	private List<Entry> tag = new ArrayList<Entry>();

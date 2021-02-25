@@ -77,22 +77,21 @@ public class GenericSpecificationsBuilder<T> {
 			List<Object> contains = searchFilter.getIngredient().stream()
 					.filter(ingredient -> !ingredient.getExclude() && !ingredient.getWildcard())
 					.map(ingredient -> ingredient.getId()).collect(Collectors.toList());
-			if(!contains.isEmpty())
+			if (!contains.isEmpty())
 				with("ingredients", SearchOperation.CONTAINS, contains);
-			
-			
+
 			List<Object> notEqual = searchFilter.getIngredient().stream()
 					.filter(ingredient -> ingredient.getExclude() && !ingredient.getWildcard())
 					.map(ingredient -> ingredient.getId()).collect(Collectors.toList());
-			if(!notEqual.isEmpty())
+			if (!notEqual.isEmpty())
 				with("ingredients.id", SearchOperation.NOT_EQUAL, notEqual);
-			
+
 			List<Object> containsLike = searchFilter.getIngredient().stream()
 					.filter(ingredient -> !ingredient.getExclude() && ingredient.getWildcard())
 					.map(ingredient -> ingredient.getId()).collect(Collectors.toList());
-			if(!containsLike.isEmpty())
+			if (!containsLike.isEmpty())
 				with("ingredients", SearchOperation.CONTAINS_LIKE, containsLike);
-			
+
 			for (var ingredient : searchFilter.getIngredient()) {
 //				if (!ingredient.getExclude() && !ingredient.getWildcard()) {
 //					with("ingredients.id", SearchOperation.EQUAL, Collections.singletonList(ingredient.getId()));

@@ -8,11 +8,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.GZIPInputStream;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
-
-import org.hibernate.search.jpa.FullTextEntityManager;
-import org.hibernate.search.jpa.Search;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -86,7 +81,7 @@ public class RezeptMeisterApplication {
 
 	@Autowired
 	private ResourceLoader resourceLoader;
-	
+
 //	@Autowired
 //	private EntityManager entityManager;
 //	
@@ -157,8 +152,8 @@ public class RezeptMeisterApplication {
 				recipe.setTitle(edekaRecipe.getTitle());
 				recipe.setSeoTitle(edekaRecipe.getSeoTitle());
 
-				resource = resourceLoader.getResource(
-						String.format("file:static/images/recipe/%s_big.jpg", edekaRecipe.getSeoTitle()));
+				resource = resourceLoader
+						.getResource(String.format("file:static/images/recipe/%s_big.jpg", edekaRecipe.getSeoTitle()));
 				InputStream pictureInputstream = null;
 				try {
 					pictureInputstream = resource.getInputStream();

@@ -1,11 +1,9 @@
 package com.jimzrt.RezeptMeister.web;
 
-import java.util.AbstractMap;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -13,27 +11,19 @@ import java.util.stream.Collectors;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.Sort;
 import org.hibernate.Hibernate;
-import org.hibernate.search.jpa.FullTextEntityManager;
-import org.hibernate.search.jpa.FullTextQuery;
-import org.hibernate.search.jpa.Search;
-import org.hibernate.search.query.dsl.QueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.util.Pair;
 import org.springframework.util.StopWatch;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.jimzrt.RezeptMeister.model.Ingredient;
@@ -59,100 +49,41 @@ public class WebController {
 
 	@Autowired
 	TagRepository tagRepository;
-	
+
 	@PersistenceContext
 	private EntityManager entityManager;
 
-	
-
-	@RequestMapping(value="/ingredient/{ingredientName}", method = RequestMethod.POST)
+	@RequestMapping(value = "/ingredient/{ingredientName}", method = RequestMethod.POST)
 	public List<Ingredient> findIngredient(@RequestBody SearchFilter searchFilter,
 			@PathVariable String ingredientName) {
 
-//		try {
-//			Random random = new Random();
-//			Thread.sleep(random.ints(1000, 2000).findFirst().getAsInt());
-//		} catch (InterruptedException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-
-		//if (countOpt.isPresent()) {
 		int count = 15;
-			Pageable pageable = PageRequest.of(0, count);
-			
-//			FullTextEntityManager fullTextEntityManager 
-//			  = Search.getFullTextEntityManager(entityManager);
-////			 
-//			QueryBuilder queryBuilder = fullTextEntityManager.getSearchFactory() 
-//			  .buildQueryBuilder()
-//			  .forEntity(Ingredient.class)
-//			  .get();
-////			
-//			Query wildcardQuery = queryBuilder
-//					  .keyword()
-//					  //.wildcard()
-//					  .fuzzy()
-//					  .onField("name")
-//					  .matching(name)
-//					  .createQuery();
-//			
-//			Query wildcardQuery = queryBuilder
-//					  .simpleQueryString()
-//					  .onFields("name")
-//					  .withAndAsDefaultOperator()
-//					  .matching("(" + name + " | " + name + "*) | " + name + "~2")
-//					  .createQuery();
-//			FullTextQuery jpaQuery
-//			  = fullTextEntityManager.createFullTextQuery(wildcardQuery, Ingredient.class);
-////			
-//			jpaQuery.setMaxResults(count);
-////			List resultList = jpaQuery.getResultList();
-////			if(resultList.isEmpty()) {
-////				
-////			}
-//			
-			//return jpaQuery.getResultList();
-			
-		//	return ingredientRepository.findByNameContainingIgnoreCase(name, pageable);
-			Set<Ingredient> all = new HashSet<Ingredient>(ingredientRepository.findByNameIgnoreCase(ingredientName, pageable));
-			
-			all.addAll(ingredientRepository.findByNameStartingWithIgnoreCase(ingredientName, pageable));
-			all.addAll(ingredientRepository.findByNameContainingIgnoreCase(ingredientName, pageable));
-//			all.addAll());
-			var ingredients =  all.parallelStream().map(ingredient->{
-				GenericSpecificationsBuilder<Recipe> builder = new GenericSpecificationsBuilder<>();
-				builder.with("ingredients.id", SearchOperation.EQUAL, Collections.singletonList(ingredient.getId()));
-				var specification = builder.fromFilter(searchFilter);
-				ingredient.setRecipeCount(recipeRepository.count(specification));
-				return ingredient;
-				//return new AbstractMap.SimpleEntry<Ingredient,Long>(ingredient,);
-			}).filter(ingredient -> ingredient.getRecipeCount() != 0).sorted(Comparator.comparingLong(Ingredient::getRecipeCount).reversed()).limit(count).collect(Collectors.toList());
-			
-			return ingredients;
+		Pageable pageable = PageRequest.of(0, count);
 
-	//	}
+		// TODO do this on database layer
+		Set<Ingredient> all = new HashSet<Ingredient>(
+				ingredientRepository.findByNameIgnoreCase(ingredientName, pageable));
 
-			
+		all.addAll(ingredientRepository.findByNameStartingWithIgnoreCase(ingredientName, pageable));
+		all.addAll(ingredientRepository.findByNameContainingIgnoreCase(ingredientName, pageable));
+		var ingredients = all.parallelStream().map(ingredient -> {
+			GenericSpecificationsBuilder<Recipe> builder = new GenericSpecificationsBuilder<>();
+			builder.with("ingredients.id", SearchOperation.EQUAL, Collections.singletonList(ingredient.getId()));
+			var specification = builder.fromFilter(searchFilter);
+			ingredient.setRecipeCount(recipeRepository.count(specification));
+			return ingredient;
+		}).filter(ingredient -> ingredient.getRecipeCount() != 0)
+				.sorted(Comparator.comparingLong(Ingredient::getRecipeCount).reversed()).limit(count)
+				.collect(Collectors.toList());
 
-			
+		return ingredients;
 
-		//return ingredientRepository.findByNameContainingIgnoreCase(name);
 	}
 
 	@RequestMapping("/recipe")
 	public List<Recipe> findRecipe(@RequestParam("name") String name,
 			@RequestParam("count") Optional<Integer> countOpt) {
 
-//		try {
-//			Random random = new Random();
-//			Thread.sleep(random.ints(1000, 2000).findFirst().getAsInt());
-//		} catch (InterruptedException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		
-//		
 		if (countOpt.isPresent()) {
 			Pageable pageable = PageRequest.of(0, countOpt.get());
 			return recipeRepository.findByTitleContainingIgnoreCase(name, pageable);
@@ -165,15 +96,6 @@ public class WebController {
 	@RequestMapping("/recipe/seo")
 	public Recipe findRecipe(@RequestParam("seoTitle") String seoTitle) {
 
-//		try {
-//			Random random = new Random();
-//			Thread.sleep(random.ints(1000, 2000).findFirst().getAsInt());
-//		} catch (InterruptedException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-//		
-//
 		var recipe = recipeRepository.findBySeoTitle(seoTitle);
 
 		// init lazy-loaded collections
@@ -249,44 +171,8 @@ public class WebController {
 
 	}
 
-//	@ResponseBody
-//	@Cacheable("images")
-//	@RequestMapping(value = "/e_images/**", method = RequestMethod.GET, produces = MediaType.IMAGE_JPEG_VALUE)
-//	public byte[] image(HttpServletRequest request) throws IOException {
-//		
-//	    String requestURL = request.getRequestURL().toString();
-//
-//	    String pictureUrl = "https://www.edeka.de/" + requestURL.split("/e_images/")[1];
-//
-//		
-//		URL url = new URL(pictureUrl);
-//		ByteArrayOutputStream output = new ByteArrayOutputStream();
-//		URLConnection conn = url.openConnection();
-//	//	conn.setRequestProperty("User-Agent", "Firefox");
-//
-//		try (InputStream inputStream = conn.getInputStream()) {
-//		  int n = 0;
-//		  byte[] buffer = new byte[1024*1024];
-//		  while (-1 != (n = inputStream.read(buffer))) {
-//		    output.write(buffer, 0, n);
-//		  }
-//		}
-//		byte[] img = output.toByteArray();
-//		return img;
-////	    InputStream in = servletContext.getResourceAsStream("images/"+path);
-////	    return IOUtils.toByteArray(in);
-//	}
-
 	@RequestMapping("/tag")
 	public List<Tag> findTag(@RequestParam("name") String name, @RequestParam("count") Optional<Integer> countOpt) {
-
-//		try {
-//			Random random = new Random();
-//			Thread.sleep(random.ints(1000, 2000).findFirst().getAsInt());
-//		} catch (InterruptedException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
 
 		if (countOpt.isPresent()) {
 			Pageable pageable = PageRequest.of(0, countOpt.get());
@@ -295,10 +181,5 @@ public class WebController {
 
 		return tagRepository.findByNameContainingIgnoreCase(name);
 	}
-
-//	@RequestMapping("/recipe")
-//	public List<Recipe> findRecipe(@RequestParam("name") String name) {
-//		return recipeRepository.findDistinctByIngredientsNameContainingIgnoreCase(name);
-//	}
 
 }
