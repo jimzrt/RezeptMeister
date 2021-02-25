@@ -29,7 +29,6 @@ public interface RecipeRepository extends CrudRepository<Recipe, Long>, JpaSpeci
 
 	List<Recipe> findByTitleContainingIgnoreCase(String name, Pageable pageable);
 
-	List<Recipe> findByTitleContainingIgnoreCase(String name);
 
 	@Override
 	Page<Recipe> findAll(@Nullable Specification<Recipe> spec, Pageable pageable);
