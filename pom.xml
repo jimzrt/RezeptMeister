@@ -118,10 +118,7 @@
 									<targetPath>${project.build.directory}/out/import</targetPath>
 									<directory>import</directory>
 								</resource>
-								<resource>
-									<targetPath>${project.build.directory}/out/static</targetPath>
-									<directory>static</directory>
-								</resource>
+
 								<resource>
 									<targetPath>${project.build.directory}/out</targetPath>
 									<directory>src/main/resources</directory>
