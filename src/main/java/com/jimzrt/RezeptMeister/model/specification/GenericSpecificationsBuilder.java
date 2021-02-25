@@ -74,33 +74,54 @@ public class GenericSpecificationsBuilder<T> {
 //		}
 
 		if (searchFilter.getIngredient().size() > 0) {
+			List<Object> contains = searchFilter.getIngredient().stream()
+					.filter(ingredient -> !ingredient.getExclude() && !ingredient.getWildcard())
+					.map(ingredient -> ingredient.getId()).collect(Collectors.toList());
+			if(!contains.isEmpty())
+				with("ingredients", SearchOperation.CONTAINS, contains);
+			
+			
+			List<Object> notEqual = searchFilter.getIngredient().stream()
+					.filter(ingredient -> ingredient.getExclude() && !ingredient.getWildcard())
+					.map(ingredient -> ingredient.getId()).collect(Collectors.toList());
+			if(!notEqual.isEmpty())
+				with("ingredients.id", SearchOperation.NOT_EQUAL, notEqual);
+			
+			List<Object> containsLike = searchFilter.getIngredient().stream()
+					.filter(ingredient -> !ingredient.getExclude() && ingredient.getWildcard())
+					.map(ingredient -> ingredient.getId()).collect(Collectors.toList());
+			if(!containsLike.isEmpty())
+				with("ingredients", SearchOperation.CONTAINS_LIKE, containsLike);
+			
 			for (var ingredient : searchFilter.getIngredient()) {
-				if(!ingredient.getExclude() && !ingredient.getWildcard()) {
-					with("ingredients", SearchOperation.EQUALITY, Collections.singletonList(ingredient.getId()));
-				} else if(ingredient.getExclude() && !ingredient.getWildcard()) {
-					with("ingredients", SearchOperation.NOT_EQUAL, Collections.singletonList(ingredient.getId()));
-				} else if(!ingredient.getExclude() && ingredient.getWildcard()) {
-					with("ingredients", SearchOperation.LIKE_NAME, Collections.singletonList(ingredient.getId()));
-				} else {
-					with("ingredients", SearchOperation.NOT_LIKE, Collections.singletonList(ingredient.getId()));
-				}
+//				if (!ingredient.getExclude() && !ingredient.getWildcard()) {
+//					with("ingredients.id", SearchOperation.EQUAL, Collections.singletonList(ingredient.getId()));
+//				} else
+//				if (ingredient.getExclude() && !ingredient.getWildcard()) {
+//					with("ingredients.id", SearchOperation.NOT_EQUAL, Collections.singletonList(ingredient.getId()));
+//				} else 
+//				if (!ingredient.getExclude() && ingredient.getWildcard()) {
+//					with("ingredients.name", SearchOperation.LIKE, Collections.singletonList(ingredient.getId()));
+//				} else {
+//					with("ingredients.name", SearchOperation.NOT_LIKE, Collections.singletonList(ingredient.getId()));
+//				}
 			}
 		}
-		
+
 		if (searchFilter.getTag().size() > 0) {
 			for (var tag : searchFilter.getTag()) {
-				if(!tag.getExclude() && !tag.getWildcard()) {
-					with("tags", SearchOperation.EQUALITY, Collections.singletonList(tag.getId()));
-				} else if(tag.getExclude() && !tag.getWildcard()) {
-					with("tags", SearchOperation.NOT_EQUAL, Collections.singletonList(tag.getId()));
-				} else if(!tag.getExclude() && tag.getWildcard()) {
-					with("tags", SearchOperation.LIKE_NAME, Collections.singletonList(tag.getId()));
+				if (!tag.getExclude() && !tag.getWildcard()) {
+					with("tags.id", SearchOperation.EQUAL, Collections.singletonList(tag.getId()));
+				} else if (tag.getExclude() && !tag.getWildcard()) {
+					with("tags.id", SearchOperation.NOT_EQUAL, Collections.singletonList(tag.getId()));
+				} else if (!tag.getExclude() && tag.getWildcard()) {
+					with("tags.name", SearchOperation.LIKE, Collections.singletonList(tag.getId()));
 				} else {
-					with("tags", SearchOperation.NOT_LIKE, Collections.singletonList(tag.getId()));
+					with("tags.name", SearchOperation.NOT_LIKE, Collections.singletonList(tag.getId()));
 				}
 			}
 		}
-		
+
 //		if (searchFilter.getExclude().getIngredient().size() > 0) {
 //			with("ingredients", SearchOperation.NOT_EQUAL, (List) searchFilter.getExclude().getIngredient());
 ////			for(var ingredientId : searchFilter.getExclude().getIngredient()) {
@@ -126,8 +147,8 @@ public class GenericSpecificationsBuilder<T> {
 		if (searchFilter.getCalories() != 0) {
 			with("calories", SearchOperation.LESS_THAN, Arrays.asList(searchFilter.getCalories()));
 		}
-		
-		if(searchFilter.getTotalTime() != 0) {
+
+		if (searchFilter.getTotalTime() != 0) {
 			with("totalTimeInSeconds", SearchOperation.LESS_THAN, Arrays.asList(searchFilter.getTotalTime()));
 		}
 

@@ -17,6 +17,9 @@ public interface IngredientRepository
 
 	// List<Ingredient> findByNameContainingIgnoreCase(String name, Pageable
 	// pageable);
+	
+	List<Ingredient> findByNameIgnoreCase(String name );
+	List<Ingredient> findByNameIgnoreCase(String name, Pageable pageable);
 
 	List<Ingredient> findByNameContainingIgnoreCase(String name);
 
@@ -26,6 +29,7 @@ public interface IngredientRepository
 			+ "  END, LENGTH(i.name)")
 	List<Ingredient> findByNameContainingIgnoreCase(@Param("name") String name, Pageable pageable);
 
+	List<Ingredient> findByNameStartingWithIgnoreCase(String name);
 	List<Ingredient> findByNameStartingWithIgnoreCase(String name, Pageable pageable);
 
 }

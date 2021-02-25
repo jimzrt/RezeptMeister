@@ -1,8 +1,14 @@
 package com.jimzrt.RezeptMeister.web;
 
+import java.util.AbstractMap;
 import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -20,12 +26,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.util.Pair;
 import org.springframework.util.StopWatch;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.jimzrt.RezeptMeister.model.Ingredient;
@@ -55,9 +63,11 @@ public class WebController {
 	@PersistenceContext
 	private EntityManager entityManager;
 
-	@RequestMapping("/ingredient")
-	public List<Ingredient> findIngredient(@RequestParam("name") String name,
-			@RequestParam("count") int count) {
+	
+
+	@RequestMapping(value="/ingredient/{ingredientName}", method = RequestMethod.POST)
+	public List<Ingredient> findIngredient(@RequestBody SearchFilter searchFilter,
+			@PathVariable String ingredientName) {
 
 //		try {
 //			Random random = new Random();
@@ -68,16 +78,17 @@ public class WebController {
 //		}
 
 		//if (countOpt.isPresent()) {
-			//Pageable pageable = PageRequest.of(0, countOpt.get());
+		int count = 15;
+			Pageable pageable = PageRequest.of(0, count);
 			
-			FullTextEntityManager fullTextEntityManager 
-			  = Search.getFullTextEntityManager(entityManager);
-			 
-			QueryBuilder queryBuilder = fullTextEntityManager.getSearchFactory() 
-			  .buildQueryBuilder()
-			  .forEntity(Ingredient.class)
-			  .get();
-//			
+//			FullTextEntityManager fullTextEntityManager 
+//			  = Search.getFullTextEntityManager(entityManager);
+////			 
+//			QueryBuilder queryBuilder = fullTextEntityManager.getSearchFactory() 
+//			  .buildQueryBuilder()
+//			  .forEntity(Ingredient.class)
+//			  .get();
+////			
 //			Query wildcardQuery = queryBuilder
 //					  .keyword()
 //					  //.wildcard()
@@ -85,31 +96,46 @@ public class WebController {
 //					  .onField("name")
 //					  .matching(name)
 //					  .createQuery();
-			
-			Query simpleQueryStringQuery = queryBuilder
-					  .simpleQueryString()
-					  .onFields("name")
-					  .withAndAsDefaultOperator()
-					  .matching("(" + name + " | " + name + "*) | " + name + "~2")
-					  .createQuery();
-			FullTextQuery jpaQuery
-			  = fullTextEntityManager.createFullTextQuery(simpleQueryStringQuery, Ingredient.class);
-			
-			jpaQuery.setMaxResults(count);
-//			List resultList = jpaQuery.getResultList();
-//			if(resultList.isEmpty()) {
-//				
-//			}
-			
-			return jpaQuery.getResultList();
+//			
+//			Query wildcardQuery = queryBuilder
+//					  .simpleQueryString()
+//					  .onFields("name")
+//					  .withAndAsDefaultOperator()
+//					  .matching("(" + name + " | " + name + "*) | " + name + "~2")
+//					  .createQuery();
+//			FullTextQuery jpaQuery
+//			  = fullTextEntityManager.createFullTextQuery(wildcardQuery, Ingredient.class);
+////			
+//			jpaQuery.setMaxResults(count);
+////			List resultList = jpaQuery.getResultList();
+////			if(resultList.isEmpty()) {
+////				
+////			}
+//			
+			//return jpaQuery.getResultList();
 			
 		//	return ingredientRepository.findByNameContainingIgnoreCase(name, pageable);
-//			List<Ingredient> all = ingredientRepository.findByNameIgnoreCase(name, pageable);
-//			all.addAll(ingredientRepository.findByNameStartingWithIgnoreCase(name, pageable));
+			Set<Ingredient> all = new HashSet<Ingredient>(ingredientRepository.findByNameIgnoreCase(ingredientName, pageable));
+			
+			all.addAll(ingredientRepository.findByNameStartingWithIgnoreCase(ingredientName, pageable));
+			all.addAll(ingredientRepository.findByNameContainingIgnoreCase(ingredientName, pageable));
 //			all.addAll());
-//			return all.stream().distinct().limit(countOpt.get()).collect(Collectors.toList());
+			var ingredients =  all.parallelStream().map(ingredient->{
+				GenericSpecificationsBuilder<Recipe> builder = new GenericSpecificationsBuilder<>();
+				builder.with("ingredients.id", SearchOperation.EQUAL, Collections.singletonList(ingredient.getId()));
+				var specification = builder.fromFilter(searchFilter);
+				ingredient.setRecipeCount(recipeRepository.count(specification));
+				return ingredient;
+				//return new AbstractMap.SimpleEntry<Ingredient,Long>(ingredient,);
+			}).filter(ingredient -> ingredient.getRecipeCount() != 0).sorted(Comparator.comparingLong(Ingredient::getRecipeCount).reversed()).limit(count).collect(Collectors.toList());
+			
+			return ingredients;
 
 	//	}
+
+			
+
+			
 
 		//return ingredientRepository.findByNameContainingIgnoreCase(name);
 	}
@@ -170,7 +196,7 @@ public class WebController {
 		watch.start();
 
 		GenericSpecificationsBuilder<Recipe> builder = new GenericSpecificationsBuilder<>();
-		builder.with("ingredients", SearchOperation.EQUALITY, Collections.singletonList(ingredientId));
+		builder.with("ingredients.id", SearchOperation.EQUAL, Collections.singletonList(ingredientId));
 		var specification = builder.fromFilter(searchFilter);
 
 		long recipeCount = recipeRepository.count(specification);
@@ -190,7 +216,7 @@ public class WebController {
 		watch.start();
 
 		GenericSpecificationsBuilder<Recipe> builder = new GenericSpecificationsBuilder<>();
-		builder.with("ingredients", SearchOperation.LIKE_NAME, Collections.singletonList(ingredientName));
+		builder.with("ingredients.name", SearchOperation.LIKE, Collections.singletonList(ingredientName));
 		var specification = builder.fromFilter(searchFilter);
 
 		long recipeCount = recipeRepository.count(specification);
