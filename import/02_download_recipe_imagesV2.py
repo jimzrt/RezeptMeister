@@ -17,7 +17,7 @@ with gzip.open('merged_edeka.json.gz') as zipfile:
 
 for idx, recipe in enumerate(json_file["recipes"]):
     seoTitle = recipe["seoTitle"]
-    filename_big = f'../src/main/resources/static/images/recipe/{seoTitle}_big.jpg'
+    filename_big = f'../static/images/recipe/{seoTitle}_big.jpg'
     if not os.path.exists(filename_big):
 
         target_width = 1520

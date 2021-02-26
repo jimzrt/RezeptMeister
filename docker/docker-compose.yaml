@@ -2,15 +2,17 @@ version: "3"
 services:
   spring_app:
     build: ./docker_files/spring_app
-    depends_on:
-      - postgres_spring
     container_name: spring_app
-    volumes:
-      - ./spring_app:/spring_app
+    depends_on:
+      - postgres
+    environment:
+      - JDBC_DATABASE_URL=jdbc:postgresql://postgres:5000/rezeptmeister
+      - JDBC_DATABASE_USERNAME=user
+      - JDBC_DATABASE_PASSWORD=password
     ports:
       - 54321:54321
     restart: unless-stopped
-  postgres_spring:
+  postgres:
     image: postgres:latest
     container_name: postgres
     volumes:
@@ -21,5 +23,27 @@ services:
          - POSTGRES_DB=rezeptmeister
     restart: unless-stopped
     command: -p 5000
+  vue_app:
+    build: 
+      context: ./docker_files/vue_app
+      args:
+        API: "/api"
+    container_name: vue_app
+    depends_on:
+      - postgres
+      - spring_app    
     ports:
-     - 5000:5000
+      - 8000:8000
+    restart: unless-stopped
+  caddyserver:
+    image: caddy:latest
+    container_name: caddyserver
+    hostname: caddyserver
+    ports:
+      - 8080:8080
+    # - 80:80
+    # - 443:443
+    volumes:
+      - "./caddy_secrets/data_lets_encrypt_storage:/data"
+      - "./caddy_secrets/config_storage:/config"
+      - "./Caddyfile:/etc/caddy/Caddyfile"
