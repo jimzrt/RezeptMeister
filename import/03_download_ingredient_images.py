@@ -97,7 +97,7 @@ for idx, recipe in enumerate(json_file["recipes"]):
                 except Exception as e:
                     print("Error:")
                     print(name, slug, str(e))
-                    sys.exit(0)
+                    #sys.exit(0)
             image = get_image_from_url(image_url)
             image.save(image_file_name, "JPEG")
             seen_ingredients.add(name)

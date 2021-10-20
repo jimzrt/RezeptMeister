@@ -33,7 +33,7 @@ while True and not os.path.isfile("merged_edeka.json.gz"):
         response_json = json.loads(response.text)
         with open(json_file_name, 'w') as outfile:
             json.dump(response_json, outfile, indent=2)
-        time.sleep(5)
+        time.sleep(1)
 
     done += size
     total_count = response_json["totalCount"]
