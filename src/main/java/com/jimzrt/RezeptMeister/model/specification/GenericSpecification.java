@@ -1,13 +1,10 @@
 package com.jimzrt.RezeptMeister.model.specification;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.JoinType;
-import javax.persistence.criteria.Predicate;
-import javax.persistence.criteria.Root;
+import javax.persistence.criteria.*;
 
 import org.springframework.data.jpa.domain.Specification;
 
@@ -20,7 +17,6 @@ public class GenericSpecification<T> implements Specification<T> {
 	private SearchCriteria searchCriteria;
 
 	public GenericSpecification(final SearchCriteria searchCriteria) {
-		super();
 		this.searchCriteria = searchCriteria;
 	}
 
@@ -31,8 +27,6 @@ public class GenericSpecification<T> implements Specification<T> {
 		if (arguments.isEmpty()) {
 			criteriaBuilder.conjunction();
 		}
-		// Object arg = arguments.get(0);
-
 		switch (searchCriteria.getSearchOperation()) {
 		case EQUAL: {
 			if (searchCriteria.getKey().contains(".")) {
@@ -101,7 +95,7 @@ public class GenericSpecification<T> implements Specification<T> {
 			return root.get(searchCriteria.getKey()).in(arguments);
 		case LESS_THAN:
 			return criteriaBuilder.lessThan(root.get(searchCriteria.getKey()), (int) arguments.get(0));
-		case CONTAINS: {
+		case MATCHES_ALL: {
 
 			// this here should work, but it doesn't. GroupBy confuses pageable count
 			// [similar: https://jira.spring.io/browse/DATAJPA-945]
@@ -126,53 +120,36 @@ public class GenericSpecification<T> implements Specification<T> {
 			return criteriaBuilder.in(root).value(subQuery);
 		}
 
-		case CONTAINS_LIKE: {
+		case MATCHES_ALL_LIKE: {
+			// For each pattern, add an EXISTS subquery
+			List<Predicate> matchAllLikePredicates = new ArrayList<>();
 
-			var subQuery = criteriaQuery.subquery(root.getModel().getBindableJavaType());
-			var entityTable = subQuery.from(root.getModel().getBindableJavaType());
-			var joinedTable = entityTable.join(searchCriteria.getKey());
+			for (Object arg : arguments) {
+				String pattern = "%" + arg.toString() + "%";
 
-			subQuery.select(entityTable.get("id"));
-			Predicate or_all = criteriaBuilder.like(criteriaBuilder.lower(joinedTable.get("name")),
-					"%" + ((String) arguments.get(0)).toLowerCase() + "%");
-			if (arguments.size() > 1) {
-				for (int i = 1; i < arguments.size(); ++i) {
-					or_all = criteriaBuilder.or(criteriaBuilder.like(criteriaBuilder.lower(joinedTable.get("name")),
-							"%" + ((String) arguments.get(i)).toLowerCase() + "%"));
+				// Support for nested properties
+				if (searchCriteria.getKey().contains(".")) {
+					String[] path = searchCriteria.getKey().split(Pattern.quote("."));
+					Path<Object> nestedPath = root.get(path[0]);
+					for (int i = 1; i < path.length; i++) {
+						nestedPath = nestedPath.get(path[i]);
+					}
+					matchAllLikePredicates.add(criteriaBuilder.like(nestedPath.as(String.class), pattern));
+				} else {
+					matchAllLikePredicates.add(criteriaBuilder.like(root.get(searchCriteria.getKey()).as(String.class), pattern));
 				}
 			}
-			subQuery.where(or_all);
-			subQuery.groupBy(entityTable.get("id"));
-			// subQuery.having(criteriaBuilder.equal(criteriaBuilder.count(joinedTable.get("id")),
-			// arguments.size()));
-			return criteriaBuilder.in(root).value(subQuery);
+
+			// Combine all LIKE predicates with AND logic
+			return criteriaBuilder.and(matchAllLikePredicates.toArray(new Predicate[0]));
+
+
+
 		}
-//		case NOT_CONTAINS_LIKE: {
-//
-//			var subQuery = criteriaQuery.subquery(root.getModel().getBindableJavaType());
-//			var entityTable = subQuery.from(root.getModel().getBindableJavaType());
-//			var joinedTable = entityTable.join(searchCriteria.getKey());
-//
-//			subQuery.select(entityTable.get("id"));
-//			Predicate or_all = criteriaBuilder.like(criteriaBuilder.lower(joinedTable.get("name")),
-//					"%" + ((String) arg).toLowerCase() + "%");
-//			if (arguments.size() > 1) {
-//				for (int i = 1; i < arguments.size(); ++i) {
-//					or_all = criteriaBuilder.or(criteriaBuilder.like(criteriaBuilder.lower(joinedTable.get("name")),
-//							"%" + ((String) arguments.get(i)).toLowerCase() + "%"));
-//				}
-//			}
-//			subQuery.where(or_all);
-//			subQuery.groupBy(entityTable.get("id"));
-//			subQuery.having(criteriaBuilder.equal(criteriaBuilder.count(joinedTable.get("id")), arguments.size()));
-//			return criteriaBuilder.in(root).value(subQuery).not();
-//		}
+
 
 		case NEGATION:
-			break;
 		case STARTS_WITH:
-			break;
-
 		default:
 			break;
 		}

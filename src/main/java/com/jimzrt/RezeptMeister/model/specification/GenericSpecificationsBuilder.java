@@ -73,24 +73,24 @@ public class GenericSpecificationsBuilder<T> {
 //			}
 //		}
 
-		if (searchFilter.getIngredient().size() > 0) {
+		if (!searchFilter.getIngredient().isEmpty()) {
 			List<Object> contains = searchFilter.getIngredient().stream()
 					.filter(ingredient -> !ingredient.getExclude() && !ingredient.getWildcard())
-					.map(ingredient -> ingredient.getId()).collect(Collectors.toList());
+					.map(SearchFilter.Entry::getId).collect(Collectors.toList());
 			if (!contains.isEmpty())
-				with("ingredients", SearchOperation.CONTAINS, contains);
+				with("ingredients", SearchOperation.MATCHES_ALL, contains);
 
 			List<Object> notEqual = searchFilter.getIngredient().stream()
 					.filter(ingredient -> ingredient.getExclude() && !ingredient.getWildcard())
-					.map(ingredient -> ingredient.getId()).collect(Collectors.toList());
+					.map(SearchFilter.Entry::getId).collect(Collectors.toList());
 			if (!notEqual.isEmpty())
 				with("ingredients.id", SearchOperation.NOT_EQUAL, notEqual);
 
 			List<Object> containsLike = searchFilter.getIngredient().stream()
 					.filter(ingredient -> !ingredient.getExclude() && ingredient.getWildcard())
-					.map(ingredient -> ingredient.getId()).collect(Collectors.toList());
+					.map(SearchFilter.Entry::getId).collect(Collectors.toList());
 			if (!containsLike.isEmpty())
-				with("ingredients", SearchOperation.CONTAINS_LIKE, containsLike);
+				with("ingredients", SearchOperation.MATCHES_ALL_LIKE, containsLike);
 
 //			for (var ingredient : searchFilter.getIngredient()) {
 //				if (!ingredient.getExclude() && !ingredient.getWildcard()) {
@@ -107,13 +107,13 @@ public class GenericSpecificationsBuilder<T> {
 //			}
 		}
 
-		if (searchFilter.getTag().size() > 0) {
+		if (!searchFilter.getTag().isEmpty()) {
 			for (var tag : searchFilter.getTag()) {
 				if (!tag.getExclude() && !tag.getWildcard()) {
 					with("tags.id", SearchOperation.EQUAL, Collections.singletonList(tag.getId()));
 				} else if (tag.getExclude() && !tag.getWildcard()) {
 					with("tags.id", SearchOperation.NOT_EQUAL, Collections.singletonList(tag.getId()));
-				} else if (!tag.getExclude() && tag.getWildcard()) {
+				} else if (!tag.getExclude()) {
 					with("tags.name", SearchOperation.LIKE, Collections.singletonList(tag.getId()));
 				} else {
 					with("tags.name", SearchOperation.NOT_LIKE, Collections.singletonList(tag.getId()));
@@ -138,17 +138,17 @@ public class GenericSpecificationsBuilder<T> {
 //
 //		}
 
-		if (searchFilter.getDifficulty().size() > 0) {
+		if (!searchFilter.getDifficulty().isEmpty()) {
 			with("difficulty", SearchOperation.IN, searchFilter.getDifficulty().stream()
-					.map(diff -> Difficulty.valueOf(diff)).collect(Collectors.toList()));
+					.map(Difficulty::valueOf).collect(Collectors.toList()));
 		}
 
 		if (searchFilter.getCalories() != 0) {
-			with("calories", SearchOperation.LESS_THAN, Arrays.asList(searchFilter.getCalories()));
+			with("calories", SearchOperation.LESS_THAN, List.of(searchFilter.getCalories()));
 		}
 
 		if (searchFilter.getTotalTime() != 0) {
-			with("totalTimeInSeconds", SearchOperation.LESS_THAN, Arrays.asList(searchFilter.getTotalTime()));
+			with("totalTimeInSeconds", SearchOperation.LESS_THAN, List.of(searchFilter.getTotalTime()));
 		}
 
 		return build();
