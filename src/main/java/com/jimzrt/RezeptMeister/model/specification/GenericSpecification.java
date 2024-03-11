@@ -33,7 +33,7 @@ public class GenericSpecification<T> implements Specification<T> {
 				var split = searchCriteria.getKey().split(Pattern.quote("."));
 				var joined = root.join(split[0]);
 				for (int i = 1; i < split.length - 1; i++) {
-					joined = root.join(split[i]);
+					joined = joined.join(split[i]);
 				}
 
 				return criteriaBuilder.equal(joined.get(split[split.length - 1]), arguments.get(0));
@@ -75,20 +75,7 @@ public class GenericSpecification<T> implements Specification<T> {
 					"%" + ((String) arguments.get(0)).toLowerCase() + "%");
 
 		}
-		// TODO
-//		case NOT_LIKE: {
-//
-//			var joined = root.join(searchCriteria.getKey(), JoinType.LEFT);
-//			joined.on(criteriaBuilder.like(criteriaBuilder.lower(joined.get("name")),
-//					"%" + ((String) arg).toLowerCase() + "%"));
-//			criteriaQuery.where(criteriaBuilder.isNull(joined.get("id")));
-//			return criteriaQuery.getRestriction();
-//
-////			criteriaQuery.distinct(true);
-////			var joined = root.join(searchCriteria.getKey());
-////			return criteriaBuilder.notLike(criteriaBuilder.lower(joined.get("name")), "%"+ ((String)arg).toLowerCase() +"%");
-//
-//		}
+
 		case GREATER_THAN:
 			return criteriaBuilder.greaterThan(root.get(searchCriteria.getKey()), (int) arguments.get(0));
 		case IN:
@@ -121,29 +108,14 @@ public class GenericSpecification<T> implements Specification<T> {
 		}
 
 		case MATCHES_ALL_LIKE: {
-			// For each pattern, add an EXISTS subquery
-			List<Predicate> matchAllLikePredicates = new ArrayList<>();
 
-			for (Object arg : arguments) {
-				String pattern = "%" + arg.toString() + "%";
-
-				// Support for nested properties
-				if (searchCriteria.getKey().contains(".")) {
-					String[] path = searchCriteria.getKey().split(Pattern.quote("."));
-					Path<Object> nestedPath = root.get(path[0]);
-					for (int i = 1; i < path.length; i++) {
-						nestedPath = nestedPath.get(path[i]);
-					}
-					matchAllLikePredicates.add(criteriaBuilder.like(nestedPath.as(String.class), pattern));
-				} else {
-					matchAllLikePredicates.add(criteriaBuilder.like(root.get(searchCriteria.getKey()).as(String.class), pattern));
-				}
+			List<Predicate> existsPredicates = new ArrayList<>();
+			for (var arg : arguments) {
+				var joined = root.join(searchCriteria.getKey());
+				existsPredicates.add(criteriaBuilder.like(criteriaBuilder.lower(joined.get("name")),
+						"%" + ((String) arg).toLowerCase() + "%"));
 			}
-
-			// Combine all LIKE predicates with AND logic
-			return criteriaBuilder.and(matchAllLikePredicates.toArray(new Predicate[0]));
-
-
+			return criteriaBuilder.and(existsPredicates.toArray(new Predicate[0]));
 
 		}
 
