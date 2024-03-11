@@ -75,7 +75,20 @@ public class GenericSpecification<T> implements Specification<T> {
 					"%" + ((String) arguments.get(0)).toLowerCase() + "%");
 
 		}
+			case NOT_LIKE:
+				criteriaQuery.distinct(true);
+				if (searchCriteria.getKey().contains(".")) {
+					var split = searchCriteria.getKey().split(Pattern.quote("."));
+					var joined = root.join(split[0]);
+					for (int i = 1; i < split.length - 1; i++) {
+						joined = root.join(split[i]);
+					}
 
+					return criteriaBuilder.notLike(criteriaBuilder.lower(joined.get(split[split.length - 1])),
+							"%" + ((String) arguments.get(0)).toLowerCase() + "%");
+				}
+				return criteriaBuilder.notLike(criteriaBuilder.lower(root.get(searchCriteria.getKey())),
+						"%" + ((String) arguments.get(0)).toLowerCase() + "%");
 		case GREATER_THAN:
 			return criteriaBuilder.greaterThan(root.get(searchCriteria.getKey()), (int) arguments.get(0));
 		case IN:
