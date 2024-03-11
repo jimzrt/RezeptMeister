@@ -110,12 +110,22 @@ public class GenericSpecification<T> implements Specification<T> {
 		case MATCHES_ALL_LIKE: {
 
 			List<Predicate> existsPredicates = new ArrayList<>();
+
+			// For each pattern, add an EXISTS subquery
 			for (var arg : arguments) {
-				var joined = root.join(searchCriteria.getKey());
-				existsPredicates.add(criteriaBuilder.like(criteriaBuilder.lower(joined.get("name")),
-						"%" + ((String) arg).toLowerCase() + "%"));
+				String pattern = "%" + ((String) arg).toLowerCase() + "%";
+				Subquery<T> subquery = criteriaQuery.subquery(root.getModel().getBindableJavaType());
+				Root<T> subRoot = subquery.from(root.getModel().getBindableJavaType());
+				Join<Object, Object> join = subRoot.join(searchCriteria.getKey());
+				subquery.select(subRoot).where(criteriaBuilder.like(criteriaBuilder.lower(join.get("name")), pattern));
+				existsPredicates.add(criteriaBuilder.exists(subquery));
+
+
 			}
-			return criteriaBuilder.and(existsPredicates.toArray(new Predicate[0]));
+
+			// Combine all EXISTS subqueries with AND
+			Predicate[] predicates = existsPredicates.toArray(new Predicate[0]);
+			return criteriaBuilder.and(predicates);
 
 		}
 
