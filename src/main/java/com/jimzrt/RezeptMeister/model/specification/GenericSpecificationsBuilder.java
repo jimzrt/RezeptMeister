@@ -74,37 +74,37 @@ public class GenericSpecificationsBuilder<T> {
 //		}
 
 		if (!searchFilter.getIngredient().isEmpty()) {
-			List<Object> contains = searchFilter.getIngredient().stream()
-					.filter(ingredient -> !ingredient.getExclude() && !ingredient.getWildcard())
-					.map(SearchFilter.Entry::getId).collect(Collectors.toList());
-			if (!contains.isEmpty())
-				with("ingredients", SearchOperation.MATCHES_ALL, contains);
+//			List<Object> contains = searchFilter.getIngredient().stream()
+//					.filter(ingredient -> !ingredient.getExclude() && !ingredient.getWildcard())
+//					.map(SearchFilter.Entry::getId).collect(Collectors.toList());
+//			if (!contains.isEmpty())
+//				with("ingredients", SearchOperation.MATCHES_ALL, contains);
+//
+//			List<Object> notEqual = searchFilter.getIngredient().stream()
+//					.filter(ingredient -> ingredient.getExclude() && !ingredient.getWildcard())
+//					.map(SearchFilter.Entry::getId).collect(Collectors.toList());
+//			if (!notEqual.isEmpty())
+//				with("ingredients.id", SearchOperation.NOT_EQUAL, notEqual);
+//
+//			List<Object> containsLike = searchFilter.getIngredient().stream()
+//					.filter(ingredient -> !ingredient.getExclude() && ingredient.getWildcard())
+//					.map(SearchFilter.Entry::getId).collect(Collectors.toList());
+//			if (!containsLike.isEmpty())
+//				with("ingredients", SearchOperation.MATCHES_ALL_LIKE, containsLike);
 
-			List<Object> notEqual = searchFilter.getIngredient().stream()
-					.filter(ingredient -> ingredient.getExclude() && !ingredient.getWildcard())
-					.map(SearchFilter.Entry::getId).collect(Collectors.toList());
-			if (!notEqual.isEmpty())
-				with("ingredients.id", SearchOperation.NOT_EQUAL, notEqual);
-
-			List<Object> containsLike = searchFilter.getIngredient().stream()
-					.filter(ingredient -> !ingredient.getExclude() && ingredient.getWildcard())
-					.map(SearchFilter.Entry::getId).collect(Collectors.toList());
-			if (!containsLike.isEmpty())
-				with("ingredients", SearchOperation.MATCHES_ALL_LIKE, containsLike);
-
-//			for (var ingredient : searchFilter.getIngredient()) {
-//				if (!ingredient.getExclude() && !ingredient.getWildcard()) {
-//					with("ingredients.id", SearchOperation.EQUAL, Collections.singletonList(ingredient.getId()));
-//				} else
-//				if (ingredient.getExclude() && !ingredient.getWildcard()) {
-//					with("ingredients.id", SearchOperation.NOT_EQUAL, Collections.singletonList(ingredient.getId()));
-//				} else 
-//				if (!ingredient.getExclude() && ingredient.getWildcard()) {
-//					with("ingredients.name", SearchOperation.LIKE, Collections.singletonList(ingredient.getId()));
-//				} else {
-//					with("ingredients.name", SearchOperation.NOT_LIKE, Collections.singletonList(ingredient.getId()));
-//				}
-//			}
+			for (var ingredient : searchFilter.getIngredient()) {
+				if (!ingredient.getExclude() && !ingredient.getWildcard()) {
+					with("ingredients.id", SearchOperation.EQUAL, Collections.singletonList(ingredient.getId()));
+				} else
+				if (ingredient.getExclude() && !ingredient.getWildcard()) {
+					with("ingredients.id", SearchOperation.NOT_EQUAL, Collections.singletonList(ingredient.getId()));
+				} else
+				if (!ingredient.getExclude() && ingredient.getWildcard()) {
+					with("ingredients.name", SearchOperation.LIKE, Collections.singletonList(ingredient.getId()));
+				} else {
+					with("ingredients.name", SearchOperation.NOT_LIKE, Collections.singletonList(ingredient.getId()));
+				}
+			}
 		}
 
 		if (!searchFilter.getTag().isEmpty()) {
