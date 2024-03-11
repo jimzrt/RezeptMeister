@@ -43,7 +43,7 @@ for idx, recipe in enumerate(json_file["recipes"]):
             area = (0, img.height//2-target_height//2, target_width, img.height//2+target_height//2)
             img = img.crop(area)
         img.save(filename_big, "JPEG", quality=30, optimize=True, progressive=True)
-        time.sleep(1)
+        time.sleep(0.1)
 
     print(f'recipe {idx}/{len(json_file["recipes"])}')
 print("done")
